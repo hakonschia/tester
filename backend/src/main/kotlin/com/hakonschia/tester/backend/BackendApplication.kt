@@ -1,5 +1,7 @@
 package com.hakonschia.tester.backend
 
+import com.malinskiy.adam.interactor.StartAdbInteractor
+import kotlinx.coroutines.runBlocking
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
@@ -7,5 +9,9 @@ import org.springframework.boot.runApplication
 class BackendApplication
 
 fun main(args: Array<String>) {
-	runApplication<BackendApplication>(*args)
+    runBlocking {
+        StartAdbInteractor().execute()
+    }
+
+    runApplication<BackendApplication>(*args)
 }

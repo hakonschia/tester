@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>Tester frontend</title>
+</html>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<body>
+<div id="devicelist">
+
+</div>
+
+<button type="button" id="send">Request device :)</button>
+
+<script>
+    const socket = new WebSocket("ws://localhost:8080/socket/devices");
+
+    socket.onmessage = function (msg) {
+        const message = JSON.parse(msg.data)
+        console.log(`socket message: ${JSON.stringify(message)}`)
+
+        if (message.type === "all-devices") {
+            $("#devicelist").empty()
+
+            for (let i = 0; i < message.data.length; i++) {
+                const device = message.data[i]
+                $("#devicelist").append(`<p id=${device}>` + device + "</p>")
+            }
+        } else if (message.type === "request-device") {
+
+        }
+    }
+
+    socket.onopen = function() {
+        sendMessage("init", "");
+    }
+
+    function sendMessage(type, data) {
+        socket.send(JSON.stringify({type: type, data: data}));
+    }
+
+    document.getElementById("send").addEventListener('click', function () {
+        sendMessage("msg", "request-device")
+    });
+</script>
+</body>

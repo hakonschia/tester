@@ -1,8 +1,8 @@
 import org.gradle.kotlin.dsl.support.kotlinCompilerOptions
 
 plugins {
-	kotlin("jvm") version "2.3.21"
-	kotlin("plugin.spring") version "2.3.21"
+	kotlin("jvm") version "2.4.20"
+	kotlin("plugin.spring") version "2.4.20"
 	id("org.springframework.boot") version "4.1.1"
 	id("io.spring.dependency-management") version "1.1.7"
 }
@@ -15,6 +15,10 @@ repositories {
 }
 
 dependencies {
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+	implementation("com.malinskiy.adam:adam:0.5.10")
+	implementation("org.springframework.boot:spring-boot-starter-websocket")
+	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
 	implementation("org.springframework.boot:spring-boot-h2console")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
