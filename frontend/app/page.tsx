@@ -2,38 +2,30 @@
 
 import useWebSocket, {ReadyState} from 'react-use-websocket';
 import React, {useEffect, useState} from "react";
-
-class SocketMessage {
-    type: string
-    data: any
-
-    constructor(type: string, data: any) {
-        this.type = type
-        this.data = data
-    }
-}
+import Link from "next/link";
+import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
 
 export default function Home() {
-    const [socketUrl] = useState('ws://localhost:8080/socket/devices')
-    const [messageHistory, setMessageHistory] = useState<String[]>([])
+    const [devices, setDevices] = useState<String[]>([])
 
     const {sendMessage, lastMessage, readyState} = useWebSocket(
-        socketUrl, {
+        WEB_SOCKET_BASE_URL + "devices", {
             onOpen: () => {
-                sendSocketMessage(new SocketMessage("init", null))
+                sendMessage(JSON.stringify(new WebSocketMessage("init", null)))
             }
         }
     )
 
     useEffect(() => {
-        if (lastMessage != null) {
-            setMessageHistory((prev) => [...prev, lastMessage.data])
+        if (lastMessage === null) return
+
+        const socketMessage = JSON.parse(lastMessage.data) as WebSocketMessage
+        console.log(lastMessage)
+
+        if (socketMessage.type == "all-devices") {
+            setDevices(socketMessage.data as string[])
         }
     }, [lastMessage])
-
-    function sendSocketMessage(message: SocketMessage) {
-        sendMessage(JSON.stringify(message))
-    }
 
     const connectionStatus = {
         [ReadyState.CONNECTING]: 'Connecting',
@@ -47,15 +39,9 @@ export default function Home() {
         <div>
             <p>Connection Status: {connectionStatus}</p>
 
-            <button
-                onClick={() => sendSocketMessage(new SocketMessage('msg', "request-device"))}
-                disabled={readyState !== ReadyState.OPEN}>
-                Send "Hello World"
-            </button>
-
             <ul>
-                {messageHistory.map((message, index) => (
-                    <li key={index}>{message}</li>
+                {devices.map((device, index) => (
+                    <Link key={index} href={`device/${device}`}>See {device}</Link>
                 ))}
             </ul>
         </div>
