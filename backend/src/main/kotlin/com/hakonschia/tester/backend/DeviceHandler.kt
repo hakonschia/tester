@@ -42,16 +42,23 @@ class DeviceHandler : TextWebSocketHandler() {
         }
     }
 
+    override fun afterConnectionEstablished(session: WebSocketSession) {
+        println("Session added: ${session.id}")
+        sessions += session
+        session.sendOnlineDevices()
+    }
+
+    override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
+        println("Session removed: ${session.id} - $status")
+        sessions -= session
+        takenDevices -= session
+    }
+
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
         println("Message recieved from ${session.id}: ${message.payload}")
 
         val json = ObjectMapper().readTree(message.payload)
         when (json.get("type").asString()) {
-            "init" -> {
-                sessions += session
-                session.sendOnlineDevices()
-            }
-
             "msg" -> {
                 val data = json.get("data")
 
@@ -73,12 +80,6 @@ class DeviceHandler : TextWebSocketHandler() {
                 }
             }
         }
-    }
-
-    override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
-        println("Session removed: ${session.id} - $status")
-        sessions -= session
-        takenDevices -= session
     }
 
     private fun WebSocketSession.sendOnlineDevices() {

@@ -8,13 +8,7 @@ import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
 export default function Home() {
     const [devices, setDevices] = useState<String[]>([])
 
-    const {sendMessage, lastMessage, readyState} = useWebSocket(
-        WEB_SOCKET_BASE_URL + "devices", {
-            onOpen: () => {
-                sendMessage(JSON.stringify(new WebSocketMessage("init", null)))
-            }
-        }
-    )
+    const {lastMessage, readyState} = useWebSocket(WEB_SOCKET_BASE_URL + "devices")
 
     useEffect(() => {
         if (lastMessage === null) return
