@@ -25,7 +25,7 @@ data class SocketMessage<T>(
 class DeviceHandler : TextWebSocketHandler() {
 
     private val adb = AndroidDebugBridgeClientFactory().build()
-    private val sessions = mutableListOf<WebSocketSession>()
+    private val sessions = mutableSetOf<WebSocketSession>()
 
     private var onlineDevices = emptyList<String>()
     private val takenDevices = mutableMapOf<WebSocketSession, String>()
@@ -43,10 +43,9 @@ class DeviceHandler : TextWebSocketHandler() {
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
+        println("Message recieved from ${session.id}: ${message.payload}")
+
         val json = ObjectMapper().readTree(message.payload)
-
-        println("session: ${session.id} $json")
-
         when (json.get("type").asString()) {
             "init" -> {
                 sessions += session
@@ -77,7 +76,7 @@ class DeviceHandler : TextWebSocketHandler() {
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
-        println("sessionRemoved: $session")
+        println("Session removed: ${session.id} - $status")
         sessions -= session
         takenDevices -= session
     }
@@ -87,7 +86,9 @@ class DeviceHandler : TextWebSocketHandler() {
     }
 
     private fun WebSocketSession.send(message: SocketMessage<Any>) {
-        sendMessage(TextMessage(jacksonObjectMapper().writeValueAsString(message)))
+        val json = jacksonObjectMapper().writeValueAsString(message)
+        println("Sending message to $id: $json")
+        sendMessage(TextMessage(json))
     }
 }
 
