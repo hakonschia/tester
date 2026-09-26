@@ -1,17 +1,22 @@
 'use client'
 
 import React, {use} from "react";
+import DefaultPage from "@/components/DefaultPage";
 
-export default function Page({
-    params,
-}: {
+export default function Page({params}: {
     params: Promise<{ id: string }>;
 }) {
-    const { id } = use(params);
+    const {id} = use(params);
 
     return (
-        <div>
-            <p>Showing device {id}</p>
-        </div>
+        <DefaultPage>
+            <p
+                style={{
+                    fontSize: "4em"
+                }}
+            >
+                Showing device {id}
+            </p>
+        </DefaultPage>
     )
 }

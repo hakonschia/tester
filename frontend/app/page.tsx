@@ -4,17 +4,16 @@ import useWebSocket, {ReadyState} from 'react-use-websocket';
 import React, {useEffect, useState} from "react";
 import Link from "next/link";
 import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
+import DefaultPage from "@/components/DefaultPage";
 
 export default function Home() {
     const [devices, setDevices] = useState<String[]>([])
-
     const {lastMessage, readyState} = useWebSocket(WEB_SOCKET_BASE_URL + "devices")
 
     useEffect(() => {
         if (lastMessage === null) return
 
         const socketMessage = JSON.parse(lastMessage.data) as WebSocketMessage
-        console.log(lastMessage)
 
         if (socketMessage.type == "all-devices") {
             setDevices(socketMessage.data as string[])
@@ -30,14 +29,39 @@ export default function Home() {
     }[readyState]
 
     return (
-        <div>
-            <p>Connection Status: {connectionStatus}</p>
+        <DefaultPage>
+            <p
+                style={{
+                    fontSize: "4em"
+                }}
+            >
+                Connection Status: {connectionStatus}
+            </p>
 
-            <ul>
-                {devices.map((device, index) => (
-                    <Link key={index} href={`device/${device}`}>See {device}</Link>
-                ))}
-            </ul>
-        </div>
+            {devices.length == 0 ? (
+                <p>No devices found</p>
+            ) : (
+                <ul
+                    style={{
+                        gap: "8px",
+                        display: "flex",
+                        flexDirection: "column"
+                    }}
+                >
+                    {devices.map((device, index) => (
+                        <Link
+                            key={index}
+                            href={`device/${device}`}
+                            style={{
+                                fontSize: "2em"
+                            }}
+                        >
+                            See {device}
+                        </Link>
+                    ))}
+                </ul>
+            )}
+        </DefaultPage>
+
     );
 }
