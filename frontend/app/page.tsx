@@ -7,7 +7,7 @@ import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
 import DefaultPage from "@/components/DefaultPage";
 
 export default function Home() {
-    const [devices, setDevices] = useState<String[]>([])
+    const [devices, setDevices] = useState<Device[]>([])
     const {lastMessage, readyState} = useWebSocket(WEB_SOCKET_BASE_URL + "devices")
 
     useEffect(() => {
@@ -16,7 +16,7 @@ export default function Home() {
         const socketMessage = JSON.parse(lastMessage.data) as WebSocketMessage
 
         if (socketMessage.type == "all-devices") {
-            setDevices(socketMessage.data as string[])
+            setDevices(socketMessage.data as Device[])
         }
     }, [lastMessage])
 
@@ -51,12 +51,12 @@ export default function Home() {
                     {devices.map((device, index) => (
                         <Link
                             key={index}
-                            href={`device/${device}`}
+                            href={`device/${device.serial}`}
                             style={{
                                 fontSize: "2em"
                             }}
                         >
-                            See {device}
+                            See {device.model}-{device.manufacturer} ({device.serial})
                         </Link>
                     ))}
                 </ul>

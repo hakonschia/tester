@@ -1,8 +1,11 @@
 package com.hakonschia.tester.backend
 
 import com.malinskiy.adam.AndroidDebugBridgeClientFactory
+import com.malinskiy.adam.request.Feature
 import com.malinskiy.adam.request.device.AsyncDeviceMonitorRequest
 import com.malinskiy.adam.request.device.DeviceState
+import com.malinskiy.adam.request.device.FetchDeviceFeaturesRequest
+import com.malinskiy.adam.request.prop.GetPropRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
@@ -22,18 +25,32 @@ data class SocketMessage<T>(
     val data: T
 )
 
+data class Device(
+    val serial: String,
+    val manufacturer: String,
+    val model: String,
+)
+
 class DeviceHandler : TextWebSocketHandler() {
 
     private val adb = AndroidDebugBridgeClientFactory().build()
     private val sessions = mutableSetOf<WebSocketSession>()
 
-    private var onlineDevices = emptyList<String>()
-    private val takenDevices = mutableMapOf<WebSocketSession, String>()
+    private var onlineDevices = emptyList<Device>()
+    private val takenDevices = mutableMapOf<WebSocketSession, Device>()
 
     init {
         GlobalScope.launch {
             adb.execute(request = AsyncDeviceMonitorRequest(), scope = this).consumeEach { devices ->
-                onlineDevices = devices.filter { it.state == DeviceState.DEVICE }.map { it.serial }
+                onlineDevices = devices.filter { it.state == DeviceState.DEVICE }.map { device ->
+                    val features = adb.execute(request = GetPropRequest(), serial = device.serial)
+
+                    Device(
+                        serial = device.serial,
+                        manufacturer = features.getValue("ro.product.manufacturer"),
+                        model = features.getValue("ro.product.model")
+                    )
+                }
 
                 sessions.forEach { session ->
                     session.sendOnlineDevices()
