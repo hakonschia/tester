@@ -11,6 +11,16 @@
           </set>
         </option>
       </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/runner" />
+        <option name="gradleJvm" value="temurin-26" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/runner" />
+          </set>
+        </option>
+        <option name="myGradleHome" value="" />
+      </GradleProjectSettings>
     </option>
   </component>
 </project>
