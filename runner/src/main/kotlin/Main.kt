@@ -147,6 +147,8 @@ class Main : CliktCommand() {
                     webSocket.send(Json.encodeToString(SocketMessage(type = "msg-from-device", data = testEvent.toString())))
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         } finally {
             webSocket.send(json.encodeToString(SocketMessage(type = "free-device", data = "")))
             exitProcess(0)

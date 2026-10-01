@@ -4,8 +4,11 @@ import com.malinskiy.adam.AndroidDebugBridgeClientFactory
 import com.malinskiy.adam.request.device.AsyncDeviceMonitorRequest
 import com.malinskiy.adam.request.device.DeviceState
 import com.malinskiy.adam.request.prop.GetPropRequest
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -17,7 +20,6 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import org.springframework.web.socket.handler.TextWebSocketHandler
-import kotlin.collections.emptyList
 
 @Serializable
 data class SocketMessage<T>(
@@ -38,34 +40,66 @@ data class Device(
     val model: String,
 )
 
+@OptIn(DelicateCoroutinesApi::class)
 class DeviceHandler : TextWebSocketHandler() {
 
     private val adb = AndroidDebugBridgeClientFactory().build()
     private val sessions = mutableSetOf<WebSocketSession>()
 
-    @all:Synchronized
-    private var onlineDevices = emptyList<Device>()
-    @all:Synchronized
-    private val takenDevices = mutableMapOf<WebSocketSession, Device>()
+    private val onlineDevices = MutableStateFlow<List<Device>>(emptyList())
+    private val takenDevices = MutableStateFlow<Map<WebSocketSession, Device>>(emptyMap())
+    val availableDevicesFlow = combine(onlineDevices, takenDevices) { online, taken ->
+        online - taken.values.toSet()
+    }
+    private val sessionsRequestingDevice = Channel<WebSocketSession>()
+
     @all:Synchronized
     private val serialsSubscribedTo = mutableMapOf<String, List<WebSocketSession>>()
 
     init {
         GlobalScope.launch {
             adb.execute(request = AsyncDeviceMonitorRequest(), scope = this).consumeEach { devices ->
-                onlineDevices = devices.filter { it.state == DeviceState.DEVICE }.map { device ->
-                    val features = adb.execute(request = GetPropRequest(), serial = device.serial)
+                onlineDevices.update {
+                    devices.filter { it.state == DeviceState.DEVICE }.map { device ->
+                        val features = adb.execute(request = GetPropRequest(), serial = device.serial)
 
-                    Device(
-                        serial = device.serial,
-                        manufacturer = features.getValue("ro.product.manufacturer"),
-                        model = features.getValue("ro.product.model")
-                    )
+                        Device(
+                            serial = device.serial,
+                            manufacturer = features.getValue("ro.product.manufacturer"),
+                            model = features.getValue("ro.product.model")
+                        )
+                    }
                 }
 
                 sessions.forEach { session ->
                     session.sendOnlineDevices()
                 }
+            }
+        }
+
+        GlobalScope.launch {
+            sessionsRequestingDevice.receiveAsFlow().collect { session ->
+                println("\tWaiting for device: $session")
+                availableDevicesFlow
+                    .filter { it.isNotEmpty() }
+                    .take(1).collect { availableDevices ->
+                        if (session.isOpen && availableDevices.isNotEmpty()) {
+                            val device = availableDevices.random()
+
+                            takenDevices.update {
+                                it.toMutableMap().apply {
+                                    this[session] = device
+                                }
+                            }
+                            session.send(SocketMessage("device-given", device))
+                        }
+                    }
+            }
+        }
+
+        GlobalScope.launch {
+            availableDevicesFlow.collect {
+                println("\tAvailable devices: $it")
             }
         }
     }
@@ -79,7 +113,7 @@ class DeviceHandler : TextWebSocketHandler() {
     override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
         println("Session removed: ${session.id} - $status")
         sessions -= session
-        takenDevices -= session
+        takenDevices.update { it - session }
         serialsSubscribedTo.replaceAll { _, sessions ->
             sessions - session
         }
@@ -92,24 +126,18 @@ class DeviceHandler : TextWebSocketHandler() {
 
         when (socketMessage.type) {
             "request-device" -> {
-                val currentDevice = takenDevices[session]
+                val currentDevice = takenDevices.value[session]
                 if (currentDevice != null) {
                     session.send(SocketMessage("device-given", "already-connected-$currentDevice"))
                 } else {
-                    val availableDevices = onlineDevices - takenDevices.values
-
-                    if (availableDevices.isNotEmpty()) {
-                        val device = availableDevices.random()
-                        takenDevices[session] = device
-                        session.send(SocketMessage("device-given", device))
-                    } else {
-                        // TODO wait for one to become available
+                    GlobalScope.launch {
+                        sessionsRequestingDevice.send(session)
                     }
                 }
             }
 
             "free-device" -> {
-                takenDevices.remove(session)
+                takenDevices.update { it - session }
             }
 
             "subscribe-to-device-updates" -> {
@@ -120,7 +148,7 @@ class DeviceHandler : TextWebSocketHandler() {
 
             "msg-from-device" -> {
                 val message = socketMessage.data
-                val serialForDevice = takenDevices[session]
+                val serialForDevice = takenDevices.value[session]
                 if (serialForDevice != null) {
                     serialsSubscribedTo[serialForDevice.serial]?.forEach { webSocketSession ->
                         webSocketSession.send(SocketMessage(type = "new-msg-from-device", data = message))
@@ -133,7 +161,7 @@ class DeviceHandler : TextWebSocketHandler() {
     }
 
     private fun WebSocketSession.sendOnlineDevices() {
-        send(SocketMessage("all-devices", onlineDevices))
+        send(SocketMessage("all-devices", onlineDevices.value))
     }
 
     private inline fun <reified T> WebSocketSession.send(message: SocketMessage<T>) {

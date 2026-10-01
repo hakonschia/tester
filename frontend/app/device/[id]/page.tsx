@@ -22,11 +22,20 @@ export default function Page({params}: {
         if (lastMessage === null) return
 
         const socketMessage = JSON.parse(lastMessage.data) as WebSocketMessage
+        console.log(socketMessage)
 
         if (socketMessage.type == "new-msg-from-device") {
             setMessages([...messages, socketMessage.data])
         }
     }, [lastMessage])
+
+    function requestDevice() {
+        sendMessage(JSON.stringify({ type: "request-device", data: "" }))
+    }
+
+    function free() {
+        sendMessage(JSON.stringify({ type: "free-device", data: id }))
+    }
 
     return (
         <DefaultPage>
@@ -34,8 +43,18 @@ export default function Page({params}: {
                 style={{
                     fontSize: "4em"
                 }}
+                onClick={requestDevice}
             >
-                Showing device {id}
+                Request {id}
+            </p>
+
+            <p
+                style={{
+                    fontSize: "4em"
+                }}
+                onClick={free}
+            >
+                Free {id}
             </p>
 
             <ul
