@@ -1,12 +1,32 @@
 'use client'
 
-import React, {use} from "react";
+import React, {use, useEffect, useState} from "react";
 import DefaultPage from "@/components/DefaultPage";
+import useWebSocket, {ReadyState} from "react-use-websocket";
+import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
 
 export default function Page({params}: {
     params: Promise<{ id: string }>;
 }) {
     const {id} = use(params);
+    const [messages, setMessages] = useState<string[]>([])
+    const {lastMessage, sendMessage, readyState} = useWebSocket(WEB_SOCKET_BASE_URL + "devices")
+
+    useEffect(() => {
+        if (readyState == ReadyState.OPEN) {
+            sendMessage(JSON.stringify({ type: "subscribe-to-device-updates", data: id }))
+        }
+    }, [readyState])
+
+    useEffect(() => {
+        if (lastMessage === null) return
+
+        const socketMessage = JSON.parse(lastMessage.data) as WebSocketMessage
+
+        if (socketMessage.type == "new-msg-from-device") {
+            setMessages([...messages, socketMessage.data])
+        }
+    }, [lastMessage])
 
     return (
         <DefaultPage>
@@ -17,6 +37,18 @@ export default function Page({params}: {
             >
                 Showing device {id}
             </p>
+
+            <ul
+                style={{
+                    gap: "8px",
+                    display: "flex",
+                    flexDirection: "column"
+                }}
+            >
+                {messages.map((message, index) => (
+                    <p key={index}>{message}</p>
+                ))}
+            </ul>
         </DefaultPage>
     )
 }

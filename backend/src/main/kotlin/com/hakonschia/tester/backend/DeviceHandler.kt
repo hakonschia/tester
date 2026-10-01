@@ -1,14 +1,14 @@
 package com.hakonschia.tester.backend
 
 import com.malinskiy.adam.AndroidDebugBridgeClientFactory
-import com.malinskiy.adam.request.Feature
 import com.malinskiy.adam.request.device.AsyncDeviceMonitorRequest
 import com.malinskiy.adam.request.device.DeviceState
-import com.malinskiy.adam.request.device.FetchDeviceFeaturesRequest
 import com.malinskiy.adam.request.prop.GetPropRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
@@ -17,14 +17,21 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import org.springframework.web.socket.handler.TextWebSocketHandler
-import tools.jackson.databind.ObjectMapper
-import tools.jackson.module.kotlin.jacksonObjectMapper
+import kotlin.collections.emptyList
 
+@Serializable
 data class SocketMessage<T>(
     val type: String,
     val data: T
 )
 
+@Serializable
+data class IncomingSocketMessage(
+    val type: String,
+    val data: String
+)
+
+@Serializable
 data class Device(
     val serial: String,
     val manufacturer: String,
@@ -36,8 +43,12 @@ class DeviceHandler : TextWebSocketHandler() {
     private val adb = AndroidDebugBridgeClientFactory().build()
     private val sessions = mutableSetOf<WebSocketSession>()
 
+    @all:Synchronized
     private var onlineDevices = emptyList<Device>()
+    @all:Synchronized
     private val takenDevices = mutableMapOf<WebSocketSession, Device>()
+    @all:Synchronized
+    private val serialsSubscribedTo = mutableMapOf<String, List<WebSocketSession>>()
 
     init {
         GlobalScope.launch {
@@ -69,31 +80,53 @@ class DeviceHandler : TextWebSocketHandler() {
         println("Session removed: ${session.id} - $status")
         sessions -= session
         takenDevices -= session
+        serialsSubscribedTo.replaceAll { _, sessions ->
+            sessions - session
+        }
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
-        println("Message recieved from ${session.id}: ${message.payload}")
+        println("Message received from ${session.id}: ${message.payload}")
 
-        val json = ObjectMapper().readTree(message.payload)
-        when (json.get("type").asString()) {
-            "msg" -> {
-                val data = json.get("data")
+        val socketMessage = Json.decodeFromString<IncomingSocketMessage>(message.payload)
 
-                when (data.asString()) {
-                    "request-device" -> {
-                        val currentDevice = takenDevices[session]
-                        if (currentDevice != null) {
-                            session.send(SocketMessage("request-device", "already-connected-$currentDevice"))
-                        } else {
-                            val availableDevices = onlineDevices - takenDevices.values
+        when (socketMessage.type) {
+            "request-device" -> {
+                val currentDevice = takenDevices[session]
+                if (currentDevice != null) {
+                    session.send(SocketMessage("device-given", "already-connected-$currentDevice"))
+                } else {
+                    val availableDevices = onlineDevices - takenDevices.values
 
-                            if (availableDevices.isNotEmpty()) {
-                                val device = availableDevices.random()
-                                takenDevices[session] = device
-                                session.send(SocketMessage("request-device", device))
-                            }
-                        }
+                    if (availableDevices.isNotEmpty()) {
+                        val device = availableDevices.random()
+                        takenDevices[session] = device
+                        session.send(SocketMessage("device-given", device))
+                    } else {
+                        // TODO wait for one to become available
                     }
+                }
+            }
+
+            "free-device" -> {
+                takenDevices.remove(session)
+            }
+
+            "subscribe-to-device-updates" -> {
+                val serial = socketMessage.data
+                val currentSubscribersForDevice = serialsSubscribedTo.getOrDefault(serial, emptyList())
+                serialsSubscribedTo[serial] = currentSubscribersForDevice + sessions
+            }
+
+            "msg-from-device" -> {
+                val message = socketMessage.data
+                val serialForDevice = takenDevices[session]
+                if (serialForDevice != null) {
+                    serialsSubscribedTo[serialForDevice.serial]?.forEach { webSocketSession ->
+                        webSocketSession.send(SocketMessage(type = "new-msg-from-device", data = message))
+                    }
+                } else {
+                    println("$session sent a message while it has no device")
                 }
             }
         }
@@ -103,8 +136,8 @@ class DeviceHandler : TextWebSocketHandler() {
         send(SocketMessage("all-devices", onlineDevices))
     }
 
-    private fun WebSocketSession.send(message: SocketMessage<Any>) {
-        val json = jacksonObjectMapper().writeValueAsString(message)
+    private inline fun <reified T> WebSocketSession.send(message: SocketMessage<T>) {
+        val json = Json.encodeToString(message)
         println("Sending message to $id: $json")
         sendMessage(TextMessage(json))
     }
