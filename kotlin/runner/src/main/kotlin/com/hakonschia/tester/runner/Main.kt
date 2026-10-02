@@ -1,12 +1,12 @@
 package com.hakonschia.tester.runner
 
-import com.hakonschia.tester.common.Device
-import com.hakonschia.tester.common.SocketMessage
-import com.hakonschia.tester.common.Type
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import com.hakonschia.tester.common.Device
+import com.hakonschia.tester.common.SocketMessage
+import com.hakonschia.tester.common.Type
 import com.malinskiy.adam.AndroidDebugBridgeClientFactory
 import com.malinskiy.adam.interactor.StartAdbInteractor
 import com.malinskiy.adam.request.device.FetchDeviceFeaturesRequest
@@ -20,11 +20,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
+import okhttp3.*
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -59,7 +55,7 @@ class Main : CliktCommand() {
                 }
 
                 override fun onOpen(webSocket: WebSocket, response: Response) {
-                    webSocket.send(Json.encodeToString(SocketMessage(type = "request-device", data = "")))
+                    webSocket.send(SocketMessage(type = "request-device", data = ""))
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -126,13 +122,13 @@ class Main : CliktCommand() {
             ).consumeAsFlow().collect { testEvents ->
                 testEvents.forEach { testEvent ->
                     println(testEvent)
-                    webSocket.send(Json.encodeToString(SocketMessage(type = "msg-from-device", data = testEvent.toString())))
+                    webSocket.send(SocketMessage(type = "msg-from-device", data = testEvent.toString()))
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
-            webSocket.send(json.encodeToString(SocketMessage(type = "free-device", data = "")))
+            webSocket.send(SocketMessage(type = "free-device", data = ""))
             exitProcess(0)
         }
     }
