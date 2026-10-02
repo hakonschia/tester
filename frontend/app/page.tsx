@@ -5,11 +5,10 @@ import React, {useEffect, useState} from "react";
 import Link from "next/link";
 import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
 import DefaultPage from "@/components/DefaultPage";
-import {sendMessage} from "next/dist/client/dev/hot-reloader/pages/websocket";
 
 export default function Home() {
     const [devices, setDevices] = useState<Device[]>([])
-    const {lastMessage, readyState} = useWebSocket(WEB_SOCKET_BASE_URL + "devices")
+    const {lastMessage, readyState, sendMessage} = useWebSocket(WEB_SOCKET_BASE_URL + "devices")
 
     useEffect(() => {
         if (lastMessage === null) return
@@ -56,15 +55,23 @@ export default function Home() {
                     }}
                 >
                     {devices.map((device, index) => (
-                        <Link
+                        <div
                             key={index}
-                            href={`device/${device.serial}`}
-                            style={{
-                                fontSize: "2em"
-                            }}
                         >
-                            See {device.model}-{device.manufacturer} ({device.serial})
-                        </Link>
+                            <Link
+                                href={`device/${device.serial}`}
+                                style={{
+                                    fontSize: "2em",
+                                    color: device.taken ? "Red" : "Green"
+                                }}
+                            >
+                                See {device.model}-{device.manufacturer} ({device.serial})
+                            </Link>
+
+                            {device.taken ? <p>
+                                Currently running tests...
+                            </p> : <p></p>}
+                        </div>
                     ))}
                 </ul>
             )}

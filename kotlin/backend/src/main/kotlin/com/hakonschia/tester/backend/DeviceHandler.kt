@@ -35,13 +35,15 @@ class DeviceHandler : TextWebSocketHandler() {
 
     private val onlineDevices = MutableStateFlow<List<Device>>(emptyList())
     private val takenDevices = MutableStateFlow<Map<WebSocketSession, Device>>(emptyMap())
-    val availableDevicesFlow = combine(onlineDevices, takenDevices) { online, taken ->
+    private val availableDevicesFlow = combine(onlineDevices, takenDevices) { online, taken ->
         online - taken.values.toSet()
     }
     private val sessionsRequestingDevice = Channel<WebSocketSession>()
 
     @all:Synchronized
     private val serialsSubscribedTo = mutableMapOf<String, List<WebSocketSession>>()
+
+    private val sessionsSubscribedToAllDevices = MutableStateFlow<List<WebSocketSession>>(emptyList())
 
     init {
         GlobalScope.launch {
@@ -53,7 +55,9 @@ class DeviceHandler : TextWebSocketHandler() {
                         Device(
                             serial = device.serial,
                             manufacturer = features.getValue("ro.product.manufacturer"),
-                            model = features.getValue("ro.product.model")
+                            model = features.getValue("ro.product.model"),
+                            // TODO no idea if this shit makes sense bruv
+                            taken = takenDevices.value.any { a -> a.value.serial == device.serial }
                         )
                     }
                 }
@@ -93,6 +97,20 @@ class DeviceHandler : TextWebSocketHandler() {
                 println("\tAvailable devices: $it")
             }
         }
+
+        GlobalScope.launch {
+            combine(onlineDevices, takenDevices) { online, taken ->
+                online.map { onlineDevice ->
+                    onlineDevice.copy(taken = taken.any { it.value.serial == onlineDevice.serial })
+                }
+            }.collectLatest { devices ->
+                sessionsSubscribedToAllDevices.collect { sessions ->
+                    sessions.forEach { session ->
+                        session.send(SocketMessage("all-devices", devices))
+                    }
+                }
+            }
+        }
     }
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
@@ -107,6 +125,7 @@ class DeviceHandler : TextWebSocketHandler() {
         serialsSubscribedTo.replaceAll { _, sessions ->
             sessions - session
         }
+        sessionsSubscribedToAllDevices.update { it - session }
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
@@ -114,7 +133,7 @@ class DeviceHandler : TextWebSocketHandler() {
 
         when (json.decodeFromString<Type>(message.payload).type) {
             "fetch-online-devices" -> {
-                session.sendOnlineDevices()
+                sessionsSubscribedToAllDevices.update { it + session }
             }
 
             "request-device" -> {
@@ -150,10 +169,6 @@ class DeviceHandler : TextWebSocketHandler() {
                 }
             }
         }
-    }
-
-    private fun WebSocketSession.sendOnlineDevices() {
-        send(SocketMessage("all-devices", onlineDevices.value))
     }
 
     private inline fun <reified T> WebSocketSession.send(message: SocketMessage<T>) {
