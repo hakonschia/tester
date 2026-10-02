@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.4.20"
-    kotlin("plugin.serialization") version "2.4.20"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 group = "com.hakonschia.tester.common"
@@ -11,9 +11,9 @@ repositories {
 }
 
 dependencies {
-    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0-RC")
-    api("com.malinskiy.adam:adam:0.5.10")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    api(libs.kotlinx.coroutines)
+    api(libs.kotlinx.serialization)
+    api(libs.adam)
 }
 
 tasks.test {

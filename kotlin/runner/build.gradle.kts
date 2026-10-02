@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 group = "com.hakonschia.tester.runner"
@@ -12,8 +12,8 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation("com.github.ajalt.clikt:clikt:5.0.0")
-    implementation("com.squareup.okhttp3:okhttp:5.5.0")
+    implementation(libs.clickt)
+    implementation(libs.okhttp)
 }
 
 tasks.test {

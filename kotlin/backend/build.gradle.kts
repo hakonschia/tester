@@ -1,7 +1,7 @@
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-    kotlin("plugin.spring")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.spring)
 }
 
 group = "com.hakonschia.tester.backend"
@@ -13,10 +13,8 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation("org.springframework.boot:spring-boot-starter-websocket:4.1.1")
-    implementation("org.springframework.boot:spring-boot-starter-data-jdbc:4.1.1")
-    implementation("org.springframework.boot:spring-boot-h2console:4.1.1")
-    implementation("org.springframework.boot:spring-boot-starter-webmvc:4.1.1")
+    implementation(libs.spring.webmvc)
+    implementation(libs.spring.websocket)
 }
 
 tasks.test {

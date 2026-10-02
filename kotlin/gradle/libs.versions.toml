@@ -1,0 +1,22 @@
+[versions]
+adam = "0.5.10"
+clikt = "5.1.0"
+kotlin = "2.4.20"
+kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.12.0-RC"
+okhttp = "5.5.0"
+springboot = "4.1.1"
+
+[libraries]
+adam = { group = "com.malinskiy.adam", name = "adam", version.ref = "adam" }
+clickt = { group = "com.github.ajalt.clikt", name = "clikt", version.ref = "clikt" }
+kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+spring-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc", version.ref = "springboot" }
+spring-websocket = { group = "org.springframework.boot", name = "spring-boot-starter-websocket", version.ref = "springboot" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
