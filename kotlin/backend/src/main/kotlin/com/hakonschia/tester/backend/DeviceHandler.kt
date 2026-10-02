@@ -31,7 +31,7 @@ class DeviceHandler : TextWebSocketHandler() {
     }
 
     private val adb = AndroidDebugBridgeClientFactory().build()
-    private val sessions = mutableSetOf<WebSocketSession>()
+    private val sessions = MutableStateFlow(emptySet<WebSocketSession>())
 
     private val onlineDevices = MutableStateFlow<List<Device>>(emptyList())
     private val takenDevices = MutableStateFlow<Map<WebSocketSession, Device>>(emptyMap())
@@ -63,20 +63,28 @@ class DeviceHandler : TextWebSocketHandler() {
         GlobalScope.launch {
             sessionsRequestingDevice.receiveAsFlow().collect { session ->
                 println("\tWaiting for device: $session")
-                availableDevicesFlow
-                    .filter { it.isNotEmpty() }
-                    .take(1).collect { availableDevices ->
-                        if (session.isOpen && availableDevices.isNotEmpty()) {
-                            val device = availableDevices.random()
 
-                            takenDevices.update {
-                                it.toMutableMap().apply {
-                                    this[session] = device
-                                }
+                availableDevicesFlow
+                    .combine(sessions) { devices, sessions -> devices to sessions }
+                    // Continue in the queue of sessions waiting if the current session is removed
+                    .takeWhile { (_, sessions) -> sessions.contains(session) }
+                    // Wait for the devices to not be empty
+                    .filter { (devices) -> devices.isNotEmpty() }
+                    // Collect non-empty devices once
+                    // Collection stops after a device is taken, and the outer session flow collect proceeds to the next session
+                    .take(1)
+                    .collect { (devices) ->
+                        val device = devices.random()
+                        takenDevices.update {
+                            it.toMutableMap().apply {
+                                this[session] = device
                             }
-                            session.send(SocketMessage("device-given", device))
                         }
+
+                        session.send(SocketMessage("device-given", device))
                     }
+
+                println("\tNot waiting anymore for: $session")
             }
         }
 
@@ -89,12 +97,12 @@ class DeviceHandler : TextWebSocketHandler() {
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
         println("Session added: ${session.id}")
-        sessions += session
+        sessions.update { it + session }
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
         println("Session removed: ${session.id} - $status")
-        sessions -= session
+        sessions.update { it - session }
         takenDevices.update { it - session }
         serialsSubscribedTo.replaceAll { _, sessions ->
             sessions - session
@@ -127,7 +135,7 @@ class DeviceHandler : TextWebSocketHandler() {
             "subscribe-to-device-updates" -> {
                 val serial = json.decodeFromString<SocketMessage<String>>(message.payload).data
                 val currentSubscribersForDevice = serialsSubscribedTo.getOrDefault(serial, emptyList())
-                serialsSubscribedTo[serial] = currentSubscribersForDevice + sessions
+                serialsSubscribedTo[serial] = currentSubscribersForDevice + sessions.value
             }
 
             "msg-from-device" -> {
