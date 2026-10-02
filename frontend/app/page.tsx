@@ -2,9 +2,9 @@
 
 import useWebSocket, {ReadyState} from 'react-use-websocket';
 import React, {useEffect, useState} from "react";
-import Link from "next/link";
 import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
 import DefaultPage from "@/components/DefaultPage";
+import DeviceListItem from "@/app/DeviceListItem";
 
 export default function Home() {
     const [devices, setDevices] = useState<Device[]>([])
@@ -49,29 +49,13 @@ export default function Home() {
             ) : (
                 <ul
                     style={{
-                        gap: "8px",
+                        gap: "16px",
                         display: "flex",
                         flexDirection: "column"
                     }}
                 >
                     {devices.map((device, index) => (
-                        <div
-                            key={index}
-                        >
-                            <Link
-                                href={`device/${device.serial}`}
-                                style={{
-                                    fontSize: "2em",
-                                    color: device.taken ? "Red" : "Green"
-                                }}
-                            >
-                                See {device.model}-{device.manufacturer} ({device.serial})
-                            </Link>
-
-                            {device.taken ? <p>
-                                Currently running tests...
-                            </p> : <p></p>}
-                        </div>
+                        <DeviceListItem device={device} key={index}/>
                     ))}
                 </ul>
             )}
