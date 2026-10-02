@@ -2,6 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend.iml" filepath="$PROJECT_DIR$/.idea/modules/backend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/kotlin.iml" filepath="$PROJECT_DIR$/kotlin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/kotlin.test.iml" filepath="$PROJECT_DIR$/.idea/modules/kotlin.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/runner.iml" filepath="$PROJECT_DIR$/runner.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/tester.iml" filepath="$PROJECT_DIR$/.idea/tester.iml" />
     </modules>
   </component>

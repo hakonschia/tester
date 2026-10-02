@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="backend" target="25" />
+      <module name="kotlin.runner2" target="26" />
+      <module name="kotlin.runner2.main" target="26" />
+      <module name="kotlin.test" target="26" />
+      <module name="runner" target="26" />
+    </bytecodeTargetLevel>
+  </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="backend" options="-parameters" />
       <module name="backend.main" options="-parameters" />
       <module name="backend.test" options="-parameters" />
+      <module name="com.hakonschia.tester.backend" options="-parameters" />
     </option>
   </component>
 </project>
