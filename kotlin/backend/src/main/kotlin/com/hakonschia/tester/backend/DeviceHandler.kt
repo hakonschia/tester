@@ -57,10 +57,6 @@ class DeviceHandler : TextWebSocketHandler() {
                         )
                     }
                 }
-
-                sessions.forEach { session ->
-                    session.sendOnlineDevices()
-                }
             }
         }
 
@@ -94,7 +90,6 @@ class DeviceHandler : TextWebSocketHandler() {
     override fun afterConnectionEstablished(session: WebSocketSession) {
         println("Session added: ${session.id}")
         sessions += session
-        session.sendOnlineDevices()
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
@@ -110,6 +105,10 @@ class DeviceHandler : TextWebSocketHandler() {
         println("Message received from ${session.id}: ${message.payload}")
 
         when (json.decodeFromString<Type>(message.payload).type) {
+            "fetch-online-devices" -> {
+                session.sendOnlineDevices()
+            }
+
             "request-device" -> {
                 val currentDevice = takenDevices.value[session]
                 if (currentDevice != null) {

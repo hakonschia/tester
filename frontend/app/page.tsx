@@ -5,6 +5,7 @@ import React, {useEffect, useState} from "react";
 import Link from "next/link";
 import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
 import DefaultPage from "@/components/DefaultPage";
+import {sendMessage} from "next/dist/client/dev/hot-reloader/pages/websocket";
 
 export default function Home() {
     const [devices, setDevices] = useState<Device[]>([])
@@ -19,6 +20,12 @@ export default function Home() {
             setDevices(socketMessage.data as Device[])
         }
     }, [lastMessage])
+
+    useEffect(() => {
+        if (readyState == ReadyState.OPEN) {
+            sendMessage(JSON.stringify({ type: "fetch-online-devices", data: ""}))
+        }
+    }, [readyState])
 
     const connectionStatus = {
         [ReadyState.CONNECTING]: 'Connecting',
