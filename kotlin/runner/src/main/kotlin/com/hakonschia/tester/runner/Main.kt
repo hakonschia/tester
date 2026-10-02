@@ -19,10 +19,12 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import okhttp3.*
 import java.io.File
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.minutes
 
 fun main(args: Array<String>) = Main().main(args)
 
@@ -68,11 +70,13 @@ class Main : CliktCommand() {
         StartAdbInteractor().execute()
         val adb = AndroidDebugBridgeClientFactory().build()
 
-        println("Waiting for device")
-        val serial = deviceFlow.filterNotNull().first().serial
-        println("Retrieved $serial!")
-
         try {
+            println("Waiting for device")
+            val serial = withTimeout(5.minutes) {
+                deviceFlow.filterNotNull().first().serial
+            }
+            println("Retrieved $serial!")
+
             val supportedFeatures = adb.execute(FetchDeviceFeaturesRequest(serial))
 
             adb.fetchInstrumentationPackages(serial).forEach { instrumentation ->
@@ -128,6 +132,8 @@ class Main : CliktCommand() {
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
+            // Not really necessary to send this message, the backend will free the device automatically when the WebSocket is closed
+            // But nice to be nice I guess :)
             webSocket.send(SocketMessage(type = "free-device", data = ""))
             exitProcess(0)
         }
