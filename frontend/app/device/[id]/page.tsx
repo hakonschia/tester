@@ -42,7 +42,7 @@ export default function Page({params}: {
     }
 
     return (
-        <DefaultPage>
+        <DefaultPage showHome={true}>
             {device != null && (
                 <p
                     style={{

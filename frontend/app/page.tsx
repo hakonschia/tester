@@ -35,7 +35,7 @@ export default function Home() {
     }[readyState]
 
     return (
-        <DefaultPage>
+        <DefaultPage showHome={false}>
             <p
                 style={{
                     fontSize: "4em"
