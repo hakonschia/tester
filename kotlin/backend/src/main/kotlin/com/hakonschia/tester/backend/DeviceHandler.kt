@@ -2,6 +2,7 @@ package com.hakonschia.tester.backend
 
 import com.hakonschia.tester.common.Device
 import com.hakonschia.tester.common.SerializableTestEvent
+import com.hakonschia.tester.common.SerializableTestIdentifier
 import com.hakonschia.tester.common.SocketMessage
 import com.hakonschia.tester.common.Type
 import com.malinskiy.adam.AndroidDebugBridgeClientFactory
@@ -203,7 +204,7 @@ class DeviceHandler : TextWebSocketHandler() {
 
                             is SerializableTestEvent.TestStarted -> {
                                 (currentEvent as DeviceStatus.CurrentTestStatus.RunningTests).copy(
-                                    currentlyRunningTest = message.id.testName
+                                    currentlyRunningTest = message.id.prettyName()
                                 )
                             }
 
@@ -212,13 +213,13 @@ class DeviceHandler : TextWebSocketHandler() {
 
                                 // When a test fails it will first send TestFailed which means that event will already be in the list
                                 // So if the last test finish is the same as this one don't add it again
-                                if (currentEvent.finishedTests.lastOrNull()?.name == message.id.testName) {
+                                if (currentEvent.finishedTests.lastOrNull()?.name == message.id.prettyName()) {
                                     currentEvent
                                 } else {
                                     currentEvent.copy(
                                         currentlyRunningTest = null,
                                         finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Success(
-                                            name = message.id.testName,
+                                            name = message.id.prettyName(),
                                             timestamp = System.currentTimeMillis(),
                                         )
                                     )
@@ -230,7 +231,7 @@ class DeviceHandler : TextWebSocketHandler() {
                                 (currentEvent as DeviceStatus.CurrentTestStatus.RunningTests).copy(
                                     currentlyRunningTest = null,
                                     finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Failed(
-                                        name = message.id.testName,
+                                        name = message.id.prettyName(),
                                         stackTrace = message.stackTrace,
                                         timestamp = System.currentTimeMillis(),
                                     )
@@ -286,3 +287,5 @@ class WSConfig : WebSocketConfigurer {
             .setAllowedOrigins("*")
     }
 }
+
+private fun SerializableTestIdentifier.prettyName() = className.split(".").last() + " - " + testName

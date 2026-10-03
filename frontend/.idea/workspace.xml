@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8e94e96c-3543-4402-a0df-3530010f91d3" name="Changes" comment="Show connection status as part of DefaultPage">
+    <list default="true" id="8e94e96c-3543-4402-a0df-3530010f91d3" name="Changes" comment="Show if device is taken and running tests or just taken">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/DeviceListItem.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/DeviceListItem.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,7 +85,8 @@
     <MESSAGE value="Show time when tests ran" />
     <MESSAGE value="Show test status on hover on the startpage" />
     <MESSAGE value="Show connection status as part of DefaultPage" />
-    <option name="LAST_COMMIT_MESSAGE" value="Show connection status as part of DefaultPage" />
+    <MESSAGE value="Show if device is taken and running tests or just taken" />
+    <option name="LAST_COMMIT_MESSAGE" value="Show if device is taken and running tests or just taken" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
