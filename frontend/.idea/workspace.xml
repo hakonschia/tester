@@ -6,6 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="8e94e96c-3543-4402-a0df-3530010f91d3" name="Changes" comment="Show if device is taken and running tests or just taken">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/DeviceListItem.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/DeviceListItem.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/device/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/device/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../kotlin/backend/src/main/kotlin/com/hakonschia/tester/backend/DeviceHandler.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../kotlin/backend/src/main/kotlin/com/hakonschia/tester/backend/DeviceHandler.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,12 +33,14 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "master",
+    "git-widget-placeholder": "main",
     "js.debugger.nextJs.config.created.client": "true",
     "js.debugger.nextJs.config.created.server": "true",
     "kotlin-language-version-configured": "true",
     "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.jshint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.jshint": "",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "settings.editor.selected.configurable": "preferences.pluginManager",

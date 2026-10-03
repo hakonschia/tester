@@ -3,6 +3,7 @@
 import React, {useState} from "react";
 import Link from "next/link";
 import {DeviceStatus, Device} from "@/Device";
+import AnimatedBlock from "../components/AnimatedBlock"
 
 export default function DeviceListItem(
     {device}: { device: DeviceStatus }
@@ -51,17 +52,19 @@ export default function DeviceListItem(
                     </p>
                 }
 
-                {device.currentTestStatus.type == "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests" && isHovered && (
-                    <div>
-                        <p>
-                            {device.currentTestStatus.finishedTests.length} / {device.currentTestStatus.totalTests} finished
-                        </p>
+                <AnimatedBlock show={isHovered}>
+                    {device.currentTestStatus.type == "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests" && (
+                        <div>
+                            <p>
+                                {device.currentTestStatus.finishedTests.length} / {device.currentTestStatus.totalTests} finished
+                            </p>
 
-                        <p>
-                            Current test running: {device.currentTestStatus.currentlyRunningTest}
-                        </p>
-                    </div>
-                )}
+                            <p>
+                                Current test running: {device.currentTestStatus.currentlyRunningTest}
+                            </p>
+                        </div>
+                    )}
+                </AnimatedBlock>
             </Link>
         </div>
     )

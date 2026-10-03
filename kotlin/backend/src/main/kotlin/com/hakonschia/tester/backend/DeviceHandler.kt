@@ -314,7 +314,12 @@ class DeviceHandler : TextWebSocketHandler() {
 
         val json = json.encodeToString(message)
         println("Sending message to $id: $json")
-        sendMessage(TextMessage(json))
+        try {
+            sendMessage(TextMessage(json))
+        } catch (e: IllegalStateException) {
+            // Happens when sending to closed sockets, the if-check above apparently still makes it possible to send to closed sockets ¯\_(ツ)_/¯
+            e.printStackTrace()
+        }
     }
 }
 

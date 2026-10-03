@@ -5,6 +5,7 @@ import DefaultPage from "@/components/DefaultPage";
 import useWebSocket, {ReadyState} from "react-use-websocket";
 import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
 import {FinishedTest, RunningTests, CurrentTestStatus, DeviceStatus} from "@/Device";
+import AnimatedBlock from "@/components/AnimatedBlock";
 
 export default function Page({params}: {
     params: Promise<{ id: string }>;
@@ -217,7 +218,7 @@ function PreviousTestRun({testRun}: { testRun: RunningTests }) {
                 Run - started at {new Date(testRun.startTimestamp).toLocaleString()}
             </p>
 
-            {isExpanded && (
+            <AnimatedBlock show={isExpanded}>
                 <ul
                     style={{
                         gap: "8px",
@@ -229,7 +230,7 @@ function PreviousTestRun({testRun}: { testRun: RunningTests }) {
                         <FinishedTestListItem key={index} test={test}/>
                     ))}
                 </ul>
-            )}
+            </AnimatedBlock>
         </div>
     )
 }
@@ -261,9 +262,9 @@ function FinishedTestListItem({test}: { test: FinishedTest }) {
                     ({new Date(test.timestamp).toLocaleString()}) ✗ {test.name}
                 </p>
 
-                {isExpanded && (
+                <AnimatedBlock show={isExpanded}>
                     <p>{test.stackTrace}</p>
-                )}
+                </AnimatedBlock>
             </div>
     }
 }
