@@ -1,10 +1,6 @@
 package com.hakonschia.tester.backend
 
-import com.hakonschia.tester.common.Device
-import com.hakonschia.tester.common.SerializableTestEvent
-import com.hakonschia.tester.common.SerializableTestIdentifier
-import com.hakonschia.tester.common.SocketMessage
-import com.hakonschia.tester.common.Type
+import com.hakonschia.tester.common.*
 import com.malinskiy.adam.AndroidDebugBridgeClientFactory
 import com.malinskiy.adam.request.device.AsyncDeviceMonitorRequest
 import com.malinskiy.adam.request.device.DeviceState
@@ -13,6 +9,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -33,22 +30,59 @@ class DeviceHandler : TextWebSocketHandler() {
     }
 
     private val adb = AndroidDebugBridgeClientFactory().build()
+
+    /**
+     * Currently connected websockets
+     */
     private val sessions = MutableStateFlow(emptySet<WebSocketSession>())
 
-    private val onlineDevices = MutableStateFlow<List<Device>>(emptyList())
-    private val takenDevices = MutableStateFlow<Map<WebSocketSession, Device>>(emptyMap())
-    private val availableDevicesFlow = combine(onlineDevices, takenDevices) { online, taken ->
+    /**
+     * All devices currently connected, which might include devices currently running tests
+     */
+    private val connectedDevicesFlow = MutableStateFlow<List<Device>>(emptyList())
+
+    /**
+     * Devices taken by a client, these devices are currently running tests
+     */
+    private val takenDevicesFlow = MutableStateFlow<Map<WebSocketSession, Device>>(emptyMap())
+
+    /**
+     * Devices currently available for clients that want to run tests
+     */
+    private val availableDevicesFlow = combine(connectedDevicesFlow, takenDevicesFlow) { online, taken ->
         online - taken.values.toSet()
     }
-    private val sessionsRequestingDevice = Channel<WebSocketSession>()
-    private val serialsSubscribedTo = MutableStateFlow<Map<String, List<WebSocketSession>>>(emptyMap())
-    private val sessionsSubscribedToAllDevices = MutableStateFlow<List<WebSocketSession>>(emptyList())
+
+    /**
+     * The current test status of each device, i.e. if a device is not running tests or which test it is currently running
+     */
     private val deviceStatus = MutableStateFlow<List<Pair<Device, DeviceStatus.CurrentTestStatus>>>(emptyList())
 
+    /**
+     * A map of where the key is a [Device.serial] and the values are every websocket that wants updates on the device
+     */
+    private val serialsSubscribedTo = MutableStateFlow<Map<String, List<WebSocketSession>>>(emptyMap())
+
+    /**
+     * Websockets that want update on every connected device
+     */
+    private val sessionsSubscribedToAllDevices = MutableStateFlow<List<WebSocketSession>>(emptyList())
+
+    /**
+     * The queue of websockets requesting a device
+     */
+    private val deviceRequestQueue = Channel<WebSocketSession>()
+
     init {
+        listenForConnectedDevices()
+        launchDeviceQueue()
+        listenForDeviceUpdatesAndNotifyWebsockets()
+    }
+
+    private fun listenForConnectedDevices() {
         GlobalScope.launch {
             adb.execute(request = AsyncDeviceMonitorRequest(), scope = this).consumeEach { devices ->
-                onlineDevices.update {
+                connectedDevicesFlow.update {
                     devices.filter { it.state == DeviceState.DEVICE }.map { device ->
                         val features = adb.execute(request = GetPropRequest(), serial = device.serial)
 
@@ -61,10 +95,18 @@ class DeviceHandler : TextWebSocketHandler() {
                 }
             }
         }
+    }
+
+    private fun launchDeviceQueue() {
+        GlobalScope.launch {
+            availableDevicesFlow.collect {
+                println("\tAvailable devices: $it")
+            }
+        }
 
         GlobalScope.launch {
-            sessionsRequestingDevice.receiveAsFlow().collect { session ->
-                println("\tWaiting for device: $session")
+            deviceRequestQueue.receiveAsFlow().collect { session ->
+                println("\t${session.id} is waiting for a device...")
 
                 availableDevicesFlow
                     .combine(sessions) { devices, sessions -> devices to sessions }
@@ -77,7 +119,7 @@ class DeviceHandler : TextWebSocketHandler() {
                     .take(1)
                     .collect { (devices) ->
                         val device = devices.random()
-                        takenDevices.update {
+                        takenDevicesFlow.update {
                             it.toMutableMap().apply {
                                 this[session] = device
                             }
@@ -86,18 +128,14 @@ class DeviceHandler : TextWebSocketHandler() {
                         session.send(SocketMessage("device-given", device))
                     }
 
-                println("\tNot waiting anymore for: $session")
+                println("\t${session.id} is no longer waiting for a device")
             }
         }
+    }
 
+    private fun listenForDeviceUpdatesAndNotifyWebsockets() {
         GlobalScope.launch {
-            availableDevicesFlow.collect {
-                println("\tAvailable devices: $it")
-            }
-        }
-
-        GlobalScope.launch {
-            combine(onlineDevices, takenDevices, deviceStatus) { online, taken, deviceStatus ->
+            combine(connectedDevicesFlow, takenDevicesFlow, deviceStatus) { online, taken, deviceStatus ->
                 online.map { onlineDevice ->
                     DeviceStatus(
                         device = onlineDevice,
@@ -107,23 +145,27 @@ class DeviceHandler : TextWebSocketHandler() {
                         ),
                     )
                 }
-            }.combine(serialsSubscribedTo) { devices, serials ->
-                devices to serials
-            }.collectLatest { (devices, serials) ->
-                serials.forEach { (serial, sessions) ->
-                    devices.forEach { device ->
-                        if (device.device.serial == serial) {
-                            sessions.forEach { session ->
-                                session.send(SocketMessage("device-status", device))
+            }.collectLatest { devices ->
+                coroutineScope {
+                    // Notify the websockets interested in specific devices
+                    serialsSubscribedTo.onEach { serials ->
+                        serials.forEach { (serial, sessions) ->
+                            devices.forEach { device ->
+                                if (device.device.serial == serial) {
+                                    sessions.forEach { session ->
+                                        session.send(SocketMessage("device-status", device))
+                                    }
+                                }
                             }
                         }
-                    }
-                }
+                    }.launchIn(this)
 
-                sessionsSubscribedToAllDevices.collect { sessions ->
-                    sessions.forEach { session ->
-                        session.send(SocketMessage("all-devices", devices))
-                    }
+                    // Notify the websockets interested in all devices
+                    sessionsSubscribedToAllDevices.onEach { sessions ->
+                        sessions.forEach { session ->
+                            session.send(SocketMessage("all-devices", devices))
+                        }
+                    }.launchIn(this)
                 }
             }
         }
@@ -137,7 +179,7 @@ class DeviceHandler : TextWebSocketHandler() {
     override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
         println("Session removed: ${session.id} - $status")
         sessions.update { it - session }
-        takenDevices.update { it - session }
+        takenDevicesFlow.update { it - session }
 
         serialsSubscribedTo.update {
             it.toMutableMap().apply {
@@ -158,34 +200,32 @@ class DeviceHandler : TextWebSocketHandler() {
             }
 
             "request-device" -> {
-                val currentDevice = takenDevices.value[session]
+                val currentDevice = takenDevicesFlow.value[session]
                 if (currentDevice != null) {
                     session.send(SocketMessage("device-given", "already-connected-$currentDevice"))
                 } else {
                     GlobalScope.launch {
-                        sessionsRequestingDevice.send(session)
+                        deviceRequestQueue.send(session)
                     }
                 }
             }
 
             "free-device" -> {
-                takenDevices.update { it - session }
+                takenDevicesFlow.update { it - session }
             }
 
             "subscribe-to-device-updates" -> {
                 val serial = json.decodeFromString<SocketMessage<String>>(message.payload).data
                 serialsSubscribedTo.update { currentSerials ->
-                    val currentSubscribersForDevice = currentSerials.getOrDefault(serial, emptyList())
-
                     currentSerials.toMutableMap().apply {
-                        this[serial] = currentSubscribersForDevice + sessions.value
+                        this[serial] = getOrDefault(serial, emptyList()) + sessions.value
                     }
                 }
             }
 
             "test-event-from-device" -> {
                 val message = json.decodeFromString<SocketMessage<SerializableTestEvent>>(message.payload).data
-                val serialForDevice = takenDevices.value[session]
+                val serialForDevice = takenDevicesFlow.value[session]
                 if (serialForDevice != null) {
                     deviceStatus.update { currentStatuses ->
                         val currentEvent = currentStatuses.firstOrNull { it.first == serialForDevice }?.second
