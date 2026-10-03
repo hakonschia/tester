@@ -2,9 +2,10 @@
 
 import React, {useState} from "react";
 import Link from "next/link";
+import {DeviceStatus, Device} from "@/Device";
 
 export default function DeviceListItem(
-    { device }: { device: DeviceStatus }
+    {device}: { device: DeviceStatus }
 ) {
     const [isHovered, setIsHovered] = useState(false);
 
@@ -13,7 +14,7 @@ export default function DeviceListItem(
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
 
-            style = {{
+            style={{
                 gap: "8px",
                 display: "block",
                 padding: "8px",
@@ -40,6 +41,18 @@ export default function DeviceListItem(
                         {device.device.model} ({device.device.serial}) is available
                     </p>
                 }
+
+                {device.currentTestStatus.type == "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests" && isHovered && (
+                    <div>
+                        <p>
+                            {device.currentTestStatus.finishedTests.length} / {device.currentTestStatus.totalTests} finished
+                        </p>
+
+                        <p>
+                            Current test running: {device.currentTestStatus.currentlyRunningTest}
+                        </p>
+                    </div>
+                )}
             </Link>
         </div>
     )
