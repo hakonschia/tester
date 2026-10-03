@@ -219,24 +219,35 @@ function PreviousTestRun({testRun}: { testRun: RunningTests }) {
 }
 
 function FinishedTestListItem({test}: { test: FinishedTest }) {
-    return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "row"
-            }}
-        >
-            <p
+    switch (test.type) {
+        case "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Success":
+            return <p
                 style={{
-                    color: test.succeed ? "green" : "red"
+                    color: "green"
                 }}
             >
-                {test.succeed ? '✓' : '✗'}
+                ✓ {test.name}
             </p>
 
-            &nbsp;
+        case "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Failed":
+            const [isExpanded, setIsExpanded] = useState(false)
 
-            {test.name}
-        </div>
-    )
+            return <p
+                style={{
+                    color: "red"
+                }}
+            >
+                <p
+                    // Amazing UX
+                    onMouseEnter={() => setIsExpanded(true)}
+                    onMouseLeave={() => setIsExpanded(false)}
+                >
+                    ✗ {test.name}
+                </p>
+
+                {isExpanded && (
+                    <p>{test.stackTrace}</p>
+                )}
+            </p>
+    }
 }

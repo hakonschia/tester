@@ -23,11 +23,22 @@ data class DeviceStatus(
             val currentlyRunningTest: String?,
             val previousRuns: List<RunningTests>
         ) : CurrentTestStatus {
+
             @Serializable
-            data class FinishedTest(
-                val name: String,
-                val succeed: Boolean,
-            )
+            sealed interface FinishedTest {
+                val name: String
+
+                @Serializable
+                data class Success(
+                    override val name: String,
+                ) : FinishedTest
+
+                @Serializable
+                data class Failed(
+                    override val name: String,
+                    val stackTrace: String,
+                ) : FinishedTest
+            }
         }
     }
 }

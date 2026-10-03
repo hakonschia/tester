@@ -10,10 +10,9 @@ export interface DeviceStatus {
     currentTestStatus: CurrentTestStatus;
 }
 
-export interface FinishedTest {
-    name: string;
-    succeed: boolean;
-}
+export type FinishedTest =
+    | {type: "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Success" } & SuccessfulTest
+    | {type: "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Failed" } & FailedTest
 
 export interface RunningTests {
     totalTests: number;
@@ -30,4 +29,13 @@ export interface DeviceStatus {
     device: Device;
     taken: boolean;
     currentTestStatus: CurrentTestStatus;
+}
+
+export interface SuccessfulTest {
+    name: string
+}
+
+export interface FailedTest {
+    name: string
+    stackTrace: string
 }

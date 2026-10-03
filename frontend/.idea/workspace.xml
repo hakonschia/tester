@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8e94e96c-3543-4402-a0df-3530010f91d3" name="Changes" comment="Show which currently running test and which tests have succeeded/failed, and show previous runs">
-      <change beforePath="$PROJECT_DIR$/Device.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Device.ts" afterDir="false" />
+    <list default="true" id="8e94e96c-3543-4402-a0df-3530010f91d3" name="Changes" comment="Different types for fail and success">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/device/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/device/[id]/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -80,7 +81,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Show which currently running test and which tests have succeeded/failed, and show previous runs" />
-    <option name="LAST_COMMIT_MESSAGE" value="Show which currently running test and which tests have succeeded/failed, and show previous runs" />
+    <MESSAGE value="Different types for fail and success" />
+    <option name="LAST_COMMIT_MESSAGE" value="Different types for fail and success" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

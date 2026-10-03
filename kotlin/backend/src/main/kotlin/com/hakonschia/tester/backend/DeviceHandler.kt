@@ -214,9 +214,8 @@ class DeviceHandler : TextWebSocketHandler() {
                                 } else {
                                     currentEvent.copy(
                                         currentlyRunningTest = null,
-                                        finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest(
+                                        finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Success(
                                             name = message.id.testName,
-                                            succeed = true
                                         )
                                     )
                                 }
@@ -226,9 +225,9 @@ class DeviceHandler : TextWebSocketHandler() {
                             is SerializableTestEvent.TestFailed -> {
                                 (currentEvent as DeviceStatus.CurrentTestStatus.RunningTests).copy(
                                     currentlyRunningTest = null,
-                                    finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest(
+                                    finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Failed(
                                         name = message.id.testName,
-                                        succeed = false
+                                        stackTrace = message.stackTrace
                                     )
                                 )
                             }
