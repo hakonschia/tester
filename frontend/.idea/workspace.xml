@@ -5,8 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8e94e96c-3543-4402-a0df-3530010f91d3" name="Changes" comment="Different types for fail and success">
+      <change beforePath="$PROJECT_DIR$/../android/app/src/androidTest/java/com/hakonschia/tester/android/ExampleInstrumentedTest.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../android/app/src/androidTest/java/com/hakonschia/tester/android/MainActivityTest.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../android/app/src/main/java/com/hakonschia/tester/android/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../android/app/src/main/java/com/hakonschia/tester/android/MainActivity.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Device.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Device.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/device/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/device/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../kotlin/backend/src/main/kotlin/com/hakonschia/tester/backend/DeviceHandler.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../kotlin/backend/src/main/kotlin/com/hakonschia/tester/backend/DeviceHandler.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../kotlin/backend/src/main/kotlin/com/hakonschia/tester/backend/DeviceStatus.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../kotlin/backend/src/main/kotlin/com/hakonschia/tester/backend/DeviceStatus.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

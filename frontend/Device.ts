@@ -19,6 +19,7 @@ export interface RunningTests {
     finishedTests: FinishedTest[];
     currentlyRunningTest: string | null;
     previousRuns: RunningTests[];
+    startTimestamp: number
 }
 
 export type CurrentTestStatus =
@@ -33,9 +34,11 @@ export interface DeviceStatus {
 
 export interface SuccessfulTest {
     name: string
+    timestamp: number
 }
 
 export interface FailedTest {
     name: string
     stackTrace: string
+    timestamp: number
 }

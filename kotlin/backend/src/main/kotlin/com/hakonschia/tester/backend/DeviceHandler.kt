@@ -101,7 +101,9 @@ class DeviceHandler : TextWebSocketHandler() {
                     DeviceStatus(
                         device = onlineDevice,
                         taken = taken.any { it.value.serial == onlineDevice.serial },
-                        currentTestStatus = deviceStatus.find { it.first == onlineDevice }?.second ?: DeviceStatus.CurrentTestStatus.NotRunningTests(emptyList()),
+                        currentTestStatus = deviceStatus.find { it.first == onlineDevice }?.second ?: DeviceStatus.CurrentTestStatus.NotRunningTests(
+                            emptyList()
+                        ),
                     )
                 }
             }.combine(serialsSubscribedTo) { devices, serials ->
@@ -193,6 +195,7 @@ class DeviceHandler : TextWebSocketHandler() {
                                 DeviceStatus.CurrentTestStatus.RunningTests(
                                     totalTests = message.testCount,
                                     finishedTests = emptyList(),
+                                    startTimestamp = System.currentTimeMillis(),
                                     currentlyRunningTest = null,
                                     previousRuns = (currentEvent as DeviceStatus.CurrentTestStatus.NotRunningTests).previousRuns,
                                 )
@@ -216,6 +219,7 @@ class DeviceHandler : TextWebSocketHandler() {
                                         currentlyRunningTest = null,
                                         finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Success(
                                             name = message.id.testName,
+                                            timestamp = System.currentTimeMillis(),
                                         )
                                     )
                                 }
@@ -227,7 +231,8 @@ class DeviceHandler : TextWebSocketHandler() {
                                     currentlyRunningTest = null,
                                     finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Failed(
                                         name = message.id.testName,
-                                        stackTrace = message.stackTrace
+                                        stackTrace = message.stackTrace,
+                                        timestamp = System.currentTimeMillis(),
                                     )
                                 )
                             }

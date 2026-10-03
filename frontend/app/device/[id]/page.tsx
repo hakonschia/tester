@@ -198,7 +198,7 @@ function PreviousTestRun({testRun}: { testRun: RunningTests }) {
                     fontSize: "1.25em"
                 }}
             >
-                Run
+                Run - started at {new Date(testRun.startTimestamp).toLocaleString()}
             </p>
 
             {isExpanded && (
@@ -226,13 +226,13 @@ function FinishedTestListItem({test}: { test: FinishedTest }) {
                     color: "green"
                 }}
             >
-                ✓ {test.name}
+                ({new Date(test.timestamp).toLocaleString()}) ✓ {test.name}
             </p>
 
         case "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest.Failed":
             const [isExpanded, setIsExpanded] = useState(false)
 
-            return <p
+            return <div
                 style={{
                     color: "red"
                 }}
@@ -242,12 +242,12 @@ function FinishedTestListItem({test}: { test: FinishedTest }) {
                     onMouseEnter={() => setIsExpanded(true)}
                     onMouseLeave={() => setIsExpanded(false)}
                 >
-                    ✗ {test.name}
+                    ({new Date(test.timestamp).toLocaleString()}) ✗ {test.name}
                 </p>
 
                 {isExpanded && (
                     <p>{test.stackTrace}</p>
                 )}
-            </p>
+            </div>
     }
 }
