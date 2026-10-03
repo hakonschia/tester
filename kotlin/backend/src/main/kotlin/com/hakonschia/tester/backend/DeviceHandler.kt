@@ -112,7 +112,7 @@ class DeviceHandler : TextWebSocketHandler() {
                 serials.forEach { (serial, sessions) ->
                     devices.forEach { device ->
                         if (device.device.serial == serial) {
-                            sessions.filter { it.isOpen }.forEach { session ->
+                            sessions.forEach { session ->
                                 session.send(SocketMessage("device-status", device))
                             }
                         }
@@ -120,7 +120,7 @@ class DeviceHandler : TextWebSocketHandler() {
                 }
 
                 sessionsSubscribedToAllDevices.collect { sessions ->
-                    sessions.filter { it.isOpen }.forEach { session ->
+                    sessions.forEach { session ->
                         session.send(SocketMessage("all-devices", devices))
                     }
                 }
@@ -265,6 +265,12 @@ class DeviceHandler : TextWebSocketHandler() {
     }
 
     private inline fun <reified T> WebSocketSession.send(message: SocketMessage<T>) {
+        if (!isOpen) {
+            println("Trying to send message to closed socket: $id")
+            sessions.update { it - this }
+            return
+        }
+
         val json = json.encodeToString(message)
         println("Sending message to $id: $json")
         sendMessage(TextMessage(json))
