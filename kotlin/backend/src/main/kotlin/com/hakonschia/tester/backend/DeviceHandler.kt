@@ -1,6 +1,7 @@
 package com.hakonschia.tester.backend
 
 import com.hakonschia.tester.common.Device
+import com.hakonschia.tester.common.SerializableTestEvent
 import com.hakonschia.tester.common.SocketMessage
 import com.hakonschia.tester.common.Type
 import com.malinskiy.adam.AndroidDebugBridgeClientFactory
@@ -41,7 +42,7 @@ class DeviceHandler : TextWebSocketHandler() {
     private val sessionsRequestingDevice = Channel<WebSocketSession>()
 
     @all:Synchronized
-    private val serialsSubscribedTo = mutableMapOf<String, List<WebSocketSession>>()
+    private val serialsSubscribedTo = MutableStateFlow<Map<String, List<WebSocketSession>>>(emptyMap())
 
     private val sessionsSubscribedToAllDevices = MutableStateFlow<List<WebSocketSession>>(emptyList())
 
@@ -103,7 +104,19 @@ class DeviceHandler : TextWebSocketHandler() {
                 online.map { onlineDevice ->
                     onlineDevice.copy(taken = taken.any { it.value.serial == onlineDevice.serial })
                 }
-            }.collectLatest { devices ->
+            }.combine(serialsSubscribedTo) { devices, serials ->
+                devices to serials
+            }.collectLatest { (devices, serials) ->
+                serials.forEach { (serial, sessions) ->
+                    devices.forEach { device ->
+                        if (device.serial == serial) {
+                            sessions.forEach { session ->
+                                session.send(SocketMessage("device-status", device))
+                            }
+                        }
+                    }
+                }
+
                 sessionsSubscribedToAllDevices.collect { sessions ->
                     sessions.forEach { session ->
                         session.send(SocketMessage("all-devices", devices))
@@ -122,8 +135,13 @@ class DeviceHandler : TextWebSocketHandler() {
         println("Session removed: ${session.id} - $status")
         sessions.update { it - session }
         takenDevices.update { it - session }
-        serialsSubscribedTo.replaceAll { _, sessions ->
-            sessions - session
+
+        serialsSubscribedTo.update {
+            it.toMutableMap().apply {
+                replaceAll { _, sessions ->
+                    sessions - session
+                }
+            }
         }
         sessionsSubscribedToAllDevices.update { it - session }
     }
@@ -153,15 +171,20 @@ class DeviceHandler : TextWebSocketHandler() {
 
             "subscribe-to-device-updates" -> {
                 val serial = json.decodeFromString<SocketMessage<String>>(message.payload).data
-                val currentSubscribersForDevice = serialsSubscribedTo.getOrDefault(serial, emptyList())
-                serialsSubscribedTo[serial] = currentSubscribersForDevice + sessions.value
+                serialsSubscribedTo.update { currentSerials ->
+                    val currentSubscribersForDevice = currentSerials.getOrDefault(serial, emptyList())
+
+                    currentSerials.toMutableMap().apply {
+                        this[serial] = currentSubscribersForDevice + sessions.value
+                    }
+                }
             }
 
             "msg-from-device" -> {
-                val message = json.decodeFromString<SocketMessage<String>>(message.payload).data
+                val message = json.decodeFromString<SocketMessage<SerializableTestEvent>>(message.payload).data
                 val serialForDevice = takenDevices.value[session]
                 if (serialForDevice != null) {
-                    serialsSubscribedTo[serialForDevice.serial]?.forEach { webSocketSession ->
+                    serialsSubscribedTo.value[serialForDevice.serial]?.forEach { webSocketSession ->
                         webSocketSession.send(SocketMessage(type = "new-msg-from-device", data = message))
                     }
                 } else {

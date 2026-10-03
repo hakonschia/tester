@@ -11,6 +11,7 @@ export default function Page({params}: {
     const {id} = use(params);
     const [messages, setMessages] = useState<string[]>([])
     const {lastMessage, sendMessage, readyState} = useWebSocket(WEB_SOCKET_BASE_URL + "devices")
+    const [device, setDevice] = useState<Device>(null)
 
     useEffect(() => {
         if (readyState == ReadyState.OPEN) {
@@ -25,7 +26,9 @@ export default function Page({params}: {
         console.log(socketMessage)
 
         if (socketMessage.type == "new-msg-from-device") {
-            setMessages([...messages, socketMessage.data])
+            setMessages([...messages, socketMessage.data.toString()])
+        } else if (socketMessage.type == "device-status") {
+            setDevice(socketMessage.data)
         }
     }, [lastMessage])
 
@@ -39,9 +42,23 @@ export default function Page({params}: {
 
     return (
         <DefaultPage>
+            {device != null ?
+                <p
+                    style={{
+                        fontSize: "4em",
+                        color: device.taken ? "rgb(239 135 0)" : "green",
+                    }}
+                >
+                    Device {device.serial}
+                </p>
+                :
+                <p>
+                </p>
+            }
+
             <p
                 style={{
-                    fontSize: "4em"
+                    fontSize: "2em"
                 }}
                 onClick={requestDevice}
             >
@@ -50,7 +67,7 @@ export default function Page({params}: {
 
             <p
                 style={{
-                    fontSize: "4em"
+                    fontSize: "2em"
                 }}
                 onClick={free}
             >

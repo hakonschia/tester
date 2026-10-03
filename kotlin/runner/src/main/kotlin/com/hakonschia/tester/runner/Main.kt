@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.hakonschia.tester.common.Device
+import com.hakonschia.tester.common.SerializableTestEvent.Companion.toSerializable
 import com.hakonschia.tester.common.SocketMessage
 import com.hakonschia.tester.common.Type
 import com.malinskiy.adam.AndroidDebugBridgeClientFactory
@@ -126,7 +127,7 @@ class Main : CliktCommand() {
             ).consumeAsFlow().collect { testEvents ->
                 testEvents.forEach { testEvent ->
                     println(testEvent)
-                    webSocket.send(SocketMessage(type = "msg-from-device", data = testEvent.toString()))
+                    webSocket.send(SocketMessage(type = "msg-from-device", data = testEvent.toSerializable()))
                 }
             }
         } catch (e: Exception) {
