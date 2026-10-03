@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8e94e96c-3543-4402-a0df-3530010f91d3" name="Changes" comment="Show test status on hover on the startpage">
+    <list default="true" id="8e94e96c-3543-4402-a0df-3530010f91d3" name="Changes" comment="Show connection status as part of DefaultPage">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/device/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/device/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/DefaultPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/DefaultPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/DeviceListItem.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/DeviceListItem.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,7 +85,8 @@
     <MESSAGE value="Add new test that runs longer" />
     <MESSAGE value="Show time when tests ran" />
     <MESSAGE value="Show test status on hover on the startpage" />
-    <option name="LAST_COMMIT_MESSAGE" value="Show test status on hover on the startpage" />
+    <MESSAGE value="Show connection status as part of DefaultPage" />
+    <option name="LAST_COMMIT_MESSAGE" value="Show connection status as part of DefaultPage" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

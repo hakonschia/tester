@@ -33,9 +33,18 @@ export default function DeviceListItem(
                 }}
             >
                 {device.taken ?
-                    <p>
-                        {device.device.model} ({device.device.serial}) is currently running tests
-                    </p>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                        }}
+                    >
+                        {`${device.device.model} (${device.device.serial}) ${
+                            device.currentTestStatus.type == "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests"
+                                ? "is currently running tests"
+                                : "is taken, but not running tests"
+                        }`}
+                    </div>
                     :
                     <p>
                         {device.device.model} ({device.device.serial}) is available
