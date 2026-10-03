@@ -44,14 +44,30 @@ export default function Page({params}: {
     return (
         <DefaultPage showHome={true} readyState={readyState}>
             {device != null && (
-                <p
+                <div
                     style={{
-                        fontSize: "4em",
-                        color: device.taken ? "rgb(239 135 0)" : "green",
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "baseline"
                     }}
                 >
-                    Device {device.device.serial}
-                </p>
+                    <p
+                        style={{
+                            fontSize: "4em",
+                            color: device.taken ? "rgb(239 135 0)" : "green",
+                        }}
+                    >
+                        Device {device.device.model}
+                    </p>
+
+                    <p
+                        style={{
+                            fontSize: "2em",
+                        }}
+                    >
+                         {device.device.serial} - {device.device.manufacturer}
+                    </p>
+                </div>
             )}
 
             <div
