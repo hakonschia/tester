@@ -4,7 +4,7 @@ import React, {use, useEffect, useState} from "react";
 import DefaultPage from "@/components/DefaultPage";
 import useWebSocket, {ReadyState} from "react-use-websocket";
 import {WEB_SOCKET_BASE_URL, WebSocketMessage} from "@/websocket/WebSocket";
-import {FinishedTest, RunningTests, CurrentTestStatus} from "@/Device";
+import {FinishedTest, RunningTests, CurrentTestStatus, DeviceStatus} from "@/Device";
 
 export default function Page({params}: {
     params: Promise<{ id: string }>;
@@ -42,7 +42,7 @@ export default function Page({params}: {
     }
 
     return (
-        <DefaultPage showHome={true}>
+        <DefaultPage showHome={true} readyState={readyState}>
             {device != null && (
                 <p
                     style={{

@@ -1,13 +1,25 @@
 import {Children} from "react";
 import Link from "next/link";
+import {ReadyState} from "react-use-websocket";
 
 // @ts-ignore
-export default function DefaultPage({children, showHome}: {showHome: Boolean}) {
+export default function DefaultPage({children, showHome, readyState}: {showHome: Boolean, readyState: ReadyState}) {
+    const connectionStatus = {
+        [ReadyState.CONNECTING]: 'Connecting',
+        [ReadyState.OPEN]: 'Open',
+        [ReadyState.CLOSING]: 'Closing',
+        [ReadyState.CLOSED]: 'Closed',
+        [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
+    }[readyState]
+
     return (
         <div>
             {showHome && (
                 <Link
                     href={"/"}
+                    style={{
+                        position: "absolute",
+                    }}
                 >
                     Go home
                 </Link>
@@ -22,6 +34,14 @@ export default function DefaultPage({children, showHome}: {showHome: Boolean}) {
                     flexDirection: "column"
                 }}
             >
+                <p
+                    style={{
+                        fontSize: "4em"
+                    }}
+                >
+                    Connection Status: {connectionStatus}
+                </p>
+
                 {children}
             </div>
         </div>

@@ -26,24 +26,8 @@ export default function Home() {
         }
     }, [readyState])
 
-    const connectionStatus = {
-        [ReadyState.CONNECTING]: 'Connecting',
-        [ReadyState.OPEN]: 'Open',
-        [ReadyState.CLOSING]: 'Closing',
-        [ReadyState.CLOSED]: 'Closed',
-        [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
-    }[readyState]
-
     return (
-        <DefaultPage showHome={false}>
-            <p
-                style={{
-                    fontSize: "4em"
-                }}
-            >
-                Connection Status: {connectionStatus}
-            </p>
-
+        <DefaultPage showHome={false} readyState={readyState}>
             {devices.length == 0 ? (
                 <p>No devices found</p>
             ) : (
