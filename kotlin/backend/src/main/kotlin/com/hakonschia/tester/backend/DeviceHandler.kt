@@ -40,11 +40,9 @@ class DeviceHandler : TextWebSocketHandler() {
         online - taken.values.toSet()
     }
     private val sessionsRequestingDevice = Channel<WebSocketSession>()
-
-    @all:Synchronized
     private val serialsSubscribedTo = MutableStateFlow<Map<String, List<WebSocketSession>>>(emptyMap())
-
     private val sessionsSubscribedToAllDevices = MutableStateFlow<List<WebSocketSession>>(emptyList())
+    private val deviceStatus = MutableStateFlow<List<Pair<Device, DeviceStatus.CurrentTestStatus>>>(emptyList())
 
     init {
         GlobalScope.launch {
@@ -57,8 +55,6 @@ class DeviceHandler : TextWebSocketHandler() {
                             serial = device.serial,
                             manufacturer = features.getValue("ro.product.manufacturer"),
                             model = features.getValue("ro.product.model"),
-                            // TODO no idea if this shit makes sense bruv
-                            taken = takenDevices.value.any { a -> a.value.serial == device.serial }
                         )
                     }
                 }
@@ -100,17 +96,21 @@ class DeviceHandler : TextWebSocketHandler() {
         }
 
         GlobalScope.launch {
-            combine(onlineDevices, takenDevices) { online, taken ->
+            combine(onlineDevices, takenDevices, deviceStatus) { online, taken, deviceStatus ->
                 online.map { onlineDevice ->
-                    onlineDevice.copy(taken = taken.any { it.value.serial == onlineDevice.serial })
+                    DeviceStatus(
+                        device = onlineDevice,
+                        taken = taken.any { it.value.serial == onlineDevice.serial },
+                        currentTestStatus = deviceStatus.find { it.first == onlineDevice }?.second ?: DeviceStatus.CurrentTestStatus.NotRunningTests(emptyList()),
+                    )
                 }
             }.combine(serialsSubscribedTo) { devices, serials ->
                 devices to serials
             }.collectLatest { (devices, serials) ->
                 serials.forEach { (serial, sessions) ->
                     devices.forEach { device ->
-                        if (device.serial == serial) {
-                            sessions.forEach { session ->
+                        if (device.device.serial == serial) {
+                            sessions.filter { it.isOpen }.forEach { session ->
                                 session.send(SocketMessage("device-status", device))
                             }
                         }
@@ -118,7 +118,7 @@ class DeviceHandler : TextWebSocketHandler() {
                 }
 
                 sessionsSubscribedToAllDevices.collect { sessions ->
-                    sessions.forEach { session ->
+                    sessions.filter { it.isOpen }.forEach { session ->
                         session.send(SocketMessage("all-devices", devices))
                     }
                 }
@@ -180,15 +180,81 @@ class DeviceHandler : TextWebSocketHandler() {
                 }
             }
 
-            "msg-from-device" -> {
+            "test-event-from-device" -> {
                 val message = json.decodeFromString<SocketMessage<SerializableTestEvent>>(message.payload).data
                 val serialForDevice = takenDevices.value[session]
                 if (serialForDevice != null) {
-                    serialsSubscribedTo.value[serialForDevice.serial]?.forEach { webSocketSession ->
-                        webSocketSession.send(SocketMessage(type = "new-msg-from-device", data = message))
+                    deviceStatus.update { currentStatuses ->
+                        val currentEvent = currentStatuses.firstOrNull { it.first == serialForDevice }?.second
+                            ?: DeviceStatus.CurrentTestStatus.NotRunningTests(emptyList())
+
+                        val event = when (message) {
+                            is SerializableTestEvent.TestRunStartedEvent -> {
+                                DeviceStatus.CurrentTestStatus.RunningTests(
+                                    totalTests = message.testCount,
+                                    finishedTests = emptyList(),
+                                    currentlyRunningTest = null,
+                                    previousRuns = (currentEvent as DeviceStatus.CurrentTestStatus.NotRunningTests).previousRuns,
+                                )
+                            }
+
+                            is SerializableTestEvent.TestStarted -> {
+                                (currentEvent as DeviceStatus.CurrentTestStatus.RunningTests).copy(
+                                    currentlyRunningTest = message.id.testName
+                                )
+                            }
+
+                            is SerializableTestEvent.TestEnded -> {
+                                (currentEvent as DeviceStatus.CurrentTestStatus.RunningTests)
+
+                                // When a test fails it will first send TestFailed which means that event will already be in the list
+                                // So if the last test finish is the same as this one don't add it again
+                                if (currentEvent.finishedTests.lastOrNull()?.name == message.id.testName) {
+                                    currentEvent
+                                } else {
+                                    currentEvent.copy(
+                                        currentlyRunningTest = null,
+                                        finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest(
+                                            name = message.id.testName,
+                                            succeed = true
+                                        )
+                                    )
+                                }
+
+                            }
+
+                            is SerializableTestEvent.TestFailed -> {
+                                (currentEvent as DeviceStatus.CurrentTestStatus.RunningTests).copy(
+                                    currentlyRunningTest = null,
+                                    finishedTests = currentEvent.finishedTests + DeviceStatus.CurrentTestStatus.RunningTests.FinishedTest(
+                                        name = message.id.testName,
+                                        succeed = false
+                                    )
+                                )
+                            }
+
+                            is SerializableTestEvent.TestRunEnded -> {
+                                DeviceStatus.CurrentTestStatus.NotRunningTests(
+                                    previousRuns = (currentEvent as DeviceStatus.CurrentTestStatus.RunningTests).previousRuns + currentEvent
+                                )
+                            }
+
+                            is SerializableTestEvent.TestAssumptionFailed,
+                            is SerializableTestEvent.TestIgnored,
+                            is SerializableTestEvent.TestRunFailed,
+                            is SerializableTestEvent.TestRunFailing,
+                            is SerializableTestEvent.TestRunStopped -> {
+                                currentEvent
+                            }
+                        }
+
+                        currentStatuses.toMutableList().apply {
+                            removeAll { it.first == serialForDevice }
+                            add(serialForDevice to event)
+                        }
                     }
                 } else {
-                    println("$session sent a message while it has no device")
+                    println("$session sent a test event message while it has no device!")
                 }
             }
         }

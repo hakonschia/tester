@@ -11,7 +11,7 @@ export default function Page({params}: {
     const {id} = use(params);
     const [messages, setMessages] = useState<string[]>([])
     const {lastMessage, sendMessage, readyState} = useWebSocket(WEB_SOCKET_BASE_URL + "devices")
-    const [device, setDevice] = useState<Device>(null)
+    const [device, setDevice] = useState<DeviceStatus>(null)
 
     useEffect(() => {
         if (readyState == ReadyState.OPEN) {
@@ -28,7 +28,7 @@ export default function Page({params}: {
         if (socketMessage.type == "new-msg-from-device") {
             setMessages([...messages, socketMessage.data.toString()])
         } else if (socketMessage.type == "device-status") {
-            setDevice(socketMessage.data)
+            setDevice(socketMessage.data as DeviceStatus)
         }
     }, [lastMessage])
 
@@ -43,14 +43,18 @@ export default function Page({params}: {
     return (
         <DefaultPage>
             {device != null ?
-                <p
-                    style={{
-                        fontSize: "4em",
-                        color: device.taken ? "rgb(239 135 0)" : "green",
-                    }}
-                >
-                    Device {device.serial}
-                </p>
+                <div>
+                    <p
+                        style={{
+                            fontSize: "4em",
+                            color: device.taken ? "rgb(239 135 0)" : "green",
+                        }}
+                    >
+                        Device {device.device.serial}
+                    </p>
+
+                    <TestStatusView status={device.currentTestStatus} />
+                </div>
                 :
                 <p>
                 </p>
@@ -87,4 +91,18 @@ export default function Page({params}: {
             </ul>
         </DefaultPage>
     )
+}
+
+function TestStatusView({ status }: { status: CurrentTestStatus }) {
+    switch (status.type) {
+        case "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.NotRunningTests":
+            return <p>Not running tests... Previous runs size: {status.previousRuns.length}</p>
+
+        case "com.hakonschia.tester.backend.DeviceStatus.CurrentTestStatus.RunningTests":
+            return <div>
+                <p>
+                    Running tests: {status.finishedTests.length} / {status.totalTests}
+                </p>
+            </div>
+    }
 }

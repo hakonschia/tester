@@ -7,7 +7,7 @@ import DefaultPage from "@/components/DefaultPage";
 import DeviceListItem from "@/app/DeviceListItem";
 
 export default function Home() {
-    const [devices, setDevices] = useState<Device[]>([])
+    const [devices, setDevices] = useState<DeviceStatus[]>([])
     const {lastMessage, readyState, sendMessage} = useWebSocket(WEB_SOCKET_BASE_URL + "devices")
 
     useEffect(() => {
@@ -16,7 +16,7 @@ export default function Home() {
         const socketMessage = JSON.parse(lastMessage.data) as WebSocketMessage
 
         if (socketMessage.type == "all-devices") {
-            setDevices(socketMessage.data as Device[])
+            setDevices(socketMessage.data as DeviceStatus[])
         }
     }, [lastMessage])
 

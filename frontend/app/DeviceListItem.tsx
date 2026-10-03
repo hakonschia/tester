@@ -4,7 +4,7 @@ import React, {useState} from "react";
 import Link from "next/link";
 
 export default function DeviceListItem(
-    { device }: { device: Device }
+    { device }: { device: DeviceStatus }
 ) {
     const [isHovered, setIsHovered] = useState(false);
 
@@ -24,7 +24,7 @@ export default function DeviceListItem(
             }}
         >
             <Link
-                href={`device/${device.serial}`}
+                href={`device/${device.device.serial}`}
                 style={{
                     fontSize: "2em",
                     color: device.taken ? "rgb(239 135 0)" : "green",
@@ -33,11 +33,11 @@ export default function DeviceListItem(
             >
                 {device.taken ?
                     <p>
-                        {device.model} ({device.serial}) is currently running tests
+                        {device.device.model} ({device.device.serial}) is currently running tests
                     </p>
                     :
                     <p>
-                        {device.model} ({device.serial}) is available
+                        {device.device.model} ({device.device.serial}) is available
                     </p>
                 }
             </Link>

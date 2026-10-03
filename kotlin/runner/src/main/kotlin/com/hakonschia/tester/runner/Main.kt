@@ -127,7 +127,7 @@ class Main : CliktCommand() {
             ).consumeAsFlow().collect { testEvents ->
                 testEvents.forEach { testEvent ->
                     println(testEvent)
-                    webSocket.send(SocketMessage(type = "msg-from-device", data = testEvent.toSerializable()))
+                    webSocket.send(SocketMessage(type = "test-event-from-device", data = testEvent.toSerializable()))
                 }
             }
         } catch (e: Exception) {
